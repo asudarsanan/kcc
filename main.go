@@ -34,6 +34,7 @@ type User struct {
 	User map[string]interface{} `yaml:"user"`
 }
 
+// Read the config file and form data structures.
 func readKubeConfig(filePath string) (*KubeConfig, error) {
 	data, err := os.ReadFile(filePath)
 	if err != nil {
@@ -49,6 +50,7 @@ func readKubeConfig(filePath string) (*KubeConfig, error) {
 	return &config, nil
 }
 
+//Write back the config file - .kube/config
 func writeKubeConfig(filePath string, config *KubeConfig) error {
 	data, err := yaml.Marshal(config)
 	if err != nil {
@@ -58,6 +60,7 @@ func writeKubeConfig(filePath string, config *KubeConfig) error {
 	return os.WriteFile(filePath, data, 0644)
 }
 
+//Switch the current-context based on the selection made
 func switchContext(config *KubeConfig, contextName string) error {
 	for _, context := range config.Contexts {
 		if context.Name == contextName {
@@ -68,6 +71,7 @@ func switchContext(config *KubeConfig, contextName string) error {
 	return fmt.Errorf("context %s not found", contextName)
 }
 
+//render selector
 func showSelector(options []string) (string, error) {
 	prompt := promptui.Select{
 		Label: "Select Kubernetes cluster context:",
