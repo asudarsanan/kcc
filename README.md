@@ -13,7 +13,7 @@ KCC is a CLI tool that helps you easily switch between Kubernetes cluster contex
 1. **Clone the repository:**
 
     ```sh
-    git clone https://github.com/yourusername/kcc.git
+    git clone https://github.com/asudarsanan/kcc.git
     cd kcc
     ```
 
@@ -90,7 +90,7 @@ Click the `"Fork"` button at the top right corner of this repository's GitHub pa
 
 Clone your fork:
 ```shell
-git clone https://github.com/yourusername/kcc.git
+git clone https://github.com/asudarsanan/kcc.git
 cd kcc
 ```
 Create a new branch:
