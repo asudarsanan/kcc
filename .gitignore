@@ -1,3 +1,5 @@
 config.yml
 .idea/*
 .idea
+*.exe
+kcc
