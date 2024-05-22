@@ -2,8 +2,10 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	"github.com/manifoldco/promptui"
 	"gopkg.in/yaml.v2"
@@ -50,7 +52,7 @@ func readKubeConfig(filePath string) (*KubeConfig, error) {
 	return &config, nil
 }
 
-//Write back the config file - .kube/config
+// Write back the config file - .kube/config
 func writeKubeConfig(filePath string, config *KubeConfig) error {
 	data, err := yaml.Marshal(config)
 	if err != nil {
@@ -60,7 +62,7 @@ func writeKubeConfig(filePath string, config *KubeConfig) error {
 	return os.WriteFile(filePath, data, 0644)
 }
 
-//Switch the current-context based on the selection made
+// Switch the current-context based on the selection made
 func switchContext(config *KubeConfig, contextName string) error {
 	for _, context := range config.Contexts {
 		if context.Name == contextName {
@@ -71,7 +73,7 @@ func switchContext(config *KubeConfig, contextName string) error {
 	return fmt.Errorf("context %s not found", contextName)
 }
 
-//render selector
+// render selector
 func showSelector(options []string) (string, error) {
 	prompt := promptui.Select{
 		Label: "Select Kubernetes cluster context:",
@@ -87,7 +89,16 @@ func showSelector(options []string) (string, error) {
 }
 
 func main() {
-	kubeConfigPath := filepath.Join(os.Getenv("HOME"), ".kube", "config")
+
+	var kubeConfigPath string
+	switch runtime.GOOS {
+	case "windows":
+		kubeConfigPath = filepath.Join(os.Getenv("HOMEDRIVE"), os.Getenv("HOMEPATH"), ".kube", "config")
+	case "darwin", "linux":
+		kubeConfigPath = os.Getenv("HOME") + "/.kube/config"
+	default:
+		log.Fatalf("Unsupported OS: %s", runtime.GOOS)
+	}
 
 	config, err := readKubeConfig(kubeConfigPath)
 	if err != nil {
