@@ -30,6 +30,8 @@ KCC is a CLI tool that helps you easily switch between Kubernetes cluster contex
     ```sh
     # On macOS and Linux:
     sudo mv kcc /usr/local/bin/
+   # or
+   `sudo install kcc /usr/local/bin/kcc`
 
     # On Windows:
     move kcc.exe C:\path\to\directory\in\PATH\
