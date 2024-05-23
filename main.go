@@ -2,13 +2,14 @@ package main
 
 import (
 	"fmt"
+	"github.com/fatih/color"
+	"github.com/manifoldco/promptui"
+	"gopkg.in/yaml.v2"
 	"log"
 	"os"
 	"path/filepath"
 	"runtime"
-
-	"github.com/manifoldco/promptui"
-	"gopkg.in/yaml.v2"
+	"strings"
 )
 
 type KubeConfig struct {
@@ -63,24 +64,63 @@ func writeKubeConfig(filePath string, config *KubeConfig) error {
 }
 
 // Switch the current-context based on the selection made
-func switchContext(config *KubeConfig, contextName string) error {
+func switchContext(config *KubeConfig, contextName string) (string, error) {
+	var selectedContextName = contextName
+	if strings.Contains(contextName, " *") {
+		selectedContextName = strings.Trim(selectedContextName, " *")
+	}
 	for _, context := range config.Contexts {
-		if context.Name == contextName {
-			config.CurrentContext = contextName
-			return nil
+		if context.Name == selectedContextName {
+			config.CurrentContext = selectedContextName
+			return selectedContextName, nil
 		}
 	}
-	return fmt.Errorf("context %s not found", contextName)
+	return "", fmt.Errorf("context %s not found", contextName)
+}
+
+func cussorPositionPointer(config *KubeConfig, contexts []string) (int, []string) {
+	cursorPosition := -1
+	updatedContext := contexts
+	currentContext := config.CurrentContext
+	if currentContext != " " {
+		for i, context := range contexts {
+			if currentContext == context {
+				updatedContext[i] = currentContext + " *"
+				cursorPosition = i
+			}
+		}
+	}
+	return cursorPosition, updatedContext
 }
 
 // render selector
-func showSelector(options []string) (string, error) {
-	prompt := promptui.Select{
-		Label: "Select Kubernetes cluster context:",
-		Items: options,
+func showSelector(options []string, currentPos int) (string, error) {
+
+	templates := &promptui.SelectTemplates{
+		Label:    "{{ . }}?",
+		Active:   "> {{ . | cyan }}",
+		Inactive: "  {{ . | white}}",
+		Selected: "  {{ . | cyan }}",
 	}
 
-	_, result, err := prompt.Run()
+	// Search contexts in the selector
+	searcher := func(input string, index int) bool {
+		option := options[index]
+		context := strings.Replace(strings.ToLower(option), " ", "", -1)
+		input = strings.Replace(strings.ToLower(input), " ", "", -1)
+		return strings.Contains(context, input)
+	}
+
+	prompt := promptui.Select{
+		Label:     "Select Kubernetes cluster context",
+		Items:     options,
+		Templates: templates,
+		Size:      5,
+		Searcher:  searcher,
+		CursorPos: currentPos,
+	}
+
+	_, result, err := prompt.RunCursorAt(currentPos, currentPos-3)
 	if err != nil {
 		return "", err
 	}
@@ -111,13 +151,15 @@ func main() {
 		contexts[i] = ctx.Name
 	}
 
-	selectedContext, err := showSelector(contexts)
+	contextPosition, contextList := cussorPositionPointer(config, contexts)
+
+	selectedContext, err := showSelector(contextList, contextPosition)
 	if err != nil {
 		fmt.Printf("Error selecting context: %v\n", err)
 		return
 	}
 
-	err = switchContext(config, selectedContext)
+	selected, err := switchContext(config, selectedContext)
 	if err != nil {
 		fmt.Printf("Error switching context: %v\n", err)
 		return
@@ -127,6 +169,6 @@ func main() {
 	if err != nil {
 		fmt.Printf("Error writing kubeconfig: %v\n", err)
 	}
-
-	fmt.Printf("Switched to context %s\n", selectedContext)
+	cyan := color.New(color.FgHiCyan).SprintFunc()
+	fmt.Printf("Switched to context: %s\n", cyan(selected))
 }
