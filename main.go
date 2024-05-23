@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/fatih/color"
 	"github.com/manifoldco/promptui"
 	"gopkg.in/yaml.v2"
@@ -110,7 +111,6 @@ func showSelector(options []string, currentPos int) (string, error) {
 		input = strings.Replace(strings.ToLower(input), " ", "", -1)
 		return strings.Contains(context, input)
 	}
-
 	prompt := promptui.Select{
 		Label:     "Select Kubernetes cluster context",
 		Items:     options,
