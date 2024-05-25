@@ -112,12 +112,13 @@ func showSelector(options []string, currentPos int) (string, error) {
 	}
 
 	prompt := promptui.Select{
-		Label:     "Select Kubernetes cluster context",
-		Items:     options,
-		Templates: templates,
-		Size:      5,
-		Searcher:  searcher,
-		CursorPos: currentPos,
+		Label:        "Select Kubernetes cluster context",
+		Items:        options,
+		Templates:    templates,
+		Size:         5,
+		Searcher:     searcher,
+		CursorPos:    currentPos,
+		HideSelected: true,
 	}
 
 	_, result, err := prompt.RunCursorAt(currentPos, currentPos-3)
