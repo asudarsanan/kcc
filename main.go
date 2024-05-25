@@ -44,13 +44,11 @@ func readKubeConfig(filePath string) (*KubeConfig, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	var config KubeConfig
 	err = yaml.Unmarshal(data, &config)
 	if err != nil {
 		return nil, err
 	}
-
 	return &config, nil
 }
 
@@ -60,16 +58,12 @@ func writeKubeConfig(filePath string, config *KubeConfig) error {
 	if err != nil {
 		return err
 	}
-
 	return os.WriteFile(filePath, data, 0644)
 }
 
 // Switch the current-context based on the selection made
 func switchContext(config *KubeConfig, contextName string) (string, error) {
 	var selectedContextName = contextName
-	if strings.Contains(contextName, " *") {
-		selectedContextName = strings.Trim(selectedContextName, " *")
-	}
 	for _, context := range config.Contexts {
 		if context.Name == selectedContextName {
 			config.CurrentContext = selectedContextName
@@ -86,7 +80,6 @@ func cussorPositionPointer(config *KubeConfig) (int, []Context) {
 	if currentContext != " " {
 		for i, context := range contexts {
 			if currentContext == context.Name {
-				//contexts[i].Name = currentContext + " *"
 				cursorPosition = i
 			}
 		}
@@ -97,11 +90,19 @@ func cussorPositionPointer(config *KubeConfig) (int, []Context) {
 // render selector
 func showSelector(options []Context, currentPos int) (string, error) {
 
+	modifiedOptions := make([]Context, len(options))
+	copy(modifiedOptions, options)
+	modifiedOptions[currentPos].Name = options[currentPos].Name + " (*)"
+
 	templates := &promptui.SelectTemplates{
-		Label:    "     | CONTEXT				| CLUSTER			| USER           |{{ . }}",
-		Active:   ">    {{ .Name | cyan }}			{{ .Context.cluster | cyan }}			{{ .Context.user | cyan}}",
-		Inactive: "     {{ .Name | white}}  {{ .Context.cluster | white }} {{ .Context.user | white}} ",
-		Selected: "     {{ .Name | cyan }}  {{ .Context.cluster | cyan }}  {{ .Context.user | cyan}}",
+		Label:    "{{ . }}? {{ `/ to search` | faint }}",
+		Active:   ">    {{ .Name | cyan | bold }}",
+		Inactive: "     {{ .Name | white}}",
+		Selected: "     {{ .Name | cyan }}",
+		Details: `{{ "CONTEXT:" | green | bold }}	{{ .Name | white  }}
+{{ "CLUSTER:" | green | bold  }}	{{ .Context.cluster | white }}
+{{ "AUTH INFO:" | green | bold  }}	{{ .Context.user | white }}
+`,
 	}
 
 	// Search contexts in the selector
@@ -113,12 +114,13 @@ func showSelector(options []Context, currentPos int) (string, error) {
 	}
 	prompt := promptui.Select{
 		Label:        "Select Kubernetes cluster context",
-		Items:        options,
+		Items:        modifiedOptions,
 		Templates:    templates,
 		Size:         5,
 		Searcher:     searcher,
 		CursorPos:    currentPos,
 		HideSelected: true,
+		HideHelp:     true,
 	}
 
 	i, _, err := prompt.RunCursorAt(currentPos, currentPos-3)
