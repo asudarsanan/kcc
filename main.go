@@ -79,35 +79,35 @@ func switchContext(config *KubeConfig, contextName string) (string, error) {
 	return "", fmt.Errorf("context %s not found", contextName)
 }
 
-func cussorPositionPointer(config *KubeConfig, contexts []string) (int, []string) {
+func cussorPositionPointer(config *KubeConfig) (int, []Context) {
 	cursorPosition := -1
-	updatedContext := contexts
+	contexts := config.Contexts
 	currentContext := config.CurrentContext
 	if currentContext != " " {
 		for i, context := range contexts {
-			if currentContext == context {
-				updatedContext[i] = currentContext + " *"
+			if currentContext == context.Name {
+				//contexts[i].Name = currentContext + " *"
 				cursorPosition = i
 			}
 		}
 	}
-	return cursorPosition, updatedContext
+	return cursorPosition, contexts
 }
 
 // render selector
-func showSelector(options []string, currentPos int) (string, error) {
+func showSelector(options []Context, currentPos int) (string, error) {
 
 	templates := &promptui.SelectTemplates{
-		Label:    "{{ . }}?",
-		Active:   "> {{ . | cyan }}",
-		Inactive: "  {{ . | white}}",
-		Selected: "  {{ . | cyan }}",
+		Label:    "     | CONTEXT				| CLUSTER			| USER           |{{ . }}",
+		Active:   ">    {{ .Name | cyan }}			{{ .Context.cluster | cyan }}			{{ .Context.user | cyan}}",
+		Inactive: "     {{ .Name | white}}  {{ .Context.cluster | white }} {{ .Context.user | white}} ",
+		Selected: "     {{ .Name | cyan }}  {{ .Context.cluster | cyan }}  {{ .Context.user | cyan}}",
 	}
 
 	// Search contexts in the selector
 	searcher := func(input string, index int) bool {
 		option := options[index]
-		context := strings.Replace(strings.ToLower(option), " ", "", -1)
+		context := strings.Replace(strings.ToLower(option.Name), " ", "", -1)
 		input = strings.Replace(strings.ToLower(input), " ", "", -1)
 		return strings.Contains(context, input)
 	}
@@ -121,12 +121,12 @@ func showSelector(options []string, currentPos int) (string, error) {
 		HideSelected: true,
 	}
 
-	_, result, err := prompt.RunCursorAt(currentPos, currentPos-3)
+	i, _, err := prompt.RunCursorAt(currentPos, currentPos-3)
 	if err != nil {
 		return "", err
 	}
 
-	return result, nil
+	return options[i].Name, nil
 }
 
 func main() {
@@ -152,7 +152,7 @@ func main() {
 		contexts[i] = ctx.Name
 	}
 
-	contextPosition, contextList := cussorPositionPointer(config, contexts)
+	contextPosition, contextList := cussorPositionPointer(config)
 
 	selectedContext, err := showSelector(contextList, contextPosition)
 	if err != nil {
