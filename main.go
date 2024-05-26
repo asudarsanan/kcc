@@ -44,13 +44,11 @@ func readKubeConfig(filePath string) (*KubeConfig, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	var config KubeConfig
 	err = yaml.Unmarshal(data, &config)
 	if err != nil {
 		return nil, err
 	}
-
 	return &config, nil
 }
 
@@ -60,16 +58,12 @@ func writeKubeConfig(filePath string, config *KubeConfig) error {
 	if err != nil {
 		return err
 	}
-
 	return os.WriteFile(filePath, data, 0644)
 }
 
 // Switch the current-context based on the selection made
 func switchContext(config *KubeConfig, contextName string) (string, error) {
 	var selectedContextName = contextName
-	if strings.Contains(contextName, " *") {
-		selectedContextName = strings.Trim(selectedContextName, " *")
-	}
 	for _, context := range config.Contexts {
 		if context.Name == selectedContextName {
 			config.CurrentContext = selectedContextName
@@ -79,53 +73,64 @@ func switchContext(config *KubeConfig, contextName string) (string, error) {
 	return "", fmt.Errorf("context %s not found", contextName)
 }
 
-func cussorPositionPointer(config *KubeConfig, contexts []string) (int, []string) {
+
+func cussorPositionPointer(config *KubeConfig) (int, []Context) {
 	cursorPosition := -1
-	updatedContext := contexts
+	contexts := config.Contexts
 	currentContext := config.CurrentContext
 	if currentContext != " " {
 		for i, context := range contexts {
-			if currentContext == context {
-				updatedContext[i] = currentContext + " *"
+			if currentContext == context.Name {
 				cursorPosition = i
 			}
 		}
 	}
-	return cursorPosition, updatedContext
+	return cursorPosition, contexts
 }
 
 // render selector
-func showSelector(options []string, currentPos int) (string, error) {
+func showSelector(options []Context, currentPos int) (string, error) {
+
+	modifiedOptions := make([]Context, len(options))
+	copy(modifiedOptions, options)
+	modifiedOptions[currentPos].Name = options[currentPos].Name + " (*)"
 
 	templates := &promptui.SelectTemplates{
-		Label:    "{{ . }}?",
-		Active:   "> {{ . | cyan }}",
-		Inactive: "  {{ . | white}}",
-		Selected: "  {{ . | cyan }}",
+		Label:    "{{ . }}? {{ `/ to search` | faint }}",
+		Active:   ">    {{ .Name | cyan | bold }}",
+		Inactive: "     {{ .Name | white}}",
+		Selected: "     {{ .Name | cyan }}",
+		Details: `{{ "CONTEXT:" | green | bold }}	{{ .Name | white  }}
+{{ "CLUSTER:" | green | bold  }}	{{ .Context.cluster | white }}
+{{ "AUTH INFO:" | green | bold  }}	{{ .Context.user | white }}
+`,
 	}
 
 	// Search contexts in the selector
 	searcher := func(input string, index int) bool {
 		option := options[index]
-		context := strings.Replace(strings.ToLower(option), " ", "", -1)
+		context := strings.Replace(strings.ToLower(option.Name), " ", "", -1)
+
 		input = strings.Replace(strings.ToLower(input), " ", "", -1)
 		return strings.Contains(context, input)
 	}
 	prompt := promptui.Select{
-		Label:     "Select Kubernetes cluster context",
-		Items:     options,
-		Templates: templates,
-		Size:      5,
-		Searcher:  searcher,
-		CursorPos: currentPos,
+		Label:        "Select Kubernetes cluster context",
+		Items:        modifiedOptions,
+		Templates:    templates,
+		Size:         5,
+		Searcher:     searcher,
+		CursorPos:    currentPos,
+		HideSelected: true,
+		HideHelp:     true,
 	}
 
-	_, result, err := prompt.RunCursorAt(currentPos, currentPos-3)
+	i, _, err := prompt.RunCursorAt(currentPos, currentPos-3)
 	if err != nil {
 		return "", err
 	}
 
-	return result, nil
+	return options[i].Name, nil
 }
 
 func main() {
@@ -151,7 +156,7 @@ func main() {
 		contexts[i] = ctx.Name
 	}
 
-	contextPosition, contextList := cussorPositionPointer(config, contexts)
+	contextPosition, contextList := cussorPositionPointer(config)
 
 	selectedContext, err := showSelector(contextList, contextPosition)
 	if err != nil {
