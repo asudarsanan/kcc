@@ -73,6 +73,7 @@ func switchContext(config *KubeConfig, contextName string) (string, error) {
 	return "", fmt.Errorf("context %s not found", contextName)
 }
 
+
 func cussorPositionPointer(config *KubeConfig) (int, []Context) {
 	cursorPosition := -1
 	contexts := config.Contexts
@@ -109,6 +110,7 @@ func showSelector(options []Context, currentPos int) (string, error) {
 	searcher := func(input string, index int) bool {
 		option := options[index]
 		context := strings.Replace(strings.ToLower(option.Name), " ", "", -1)
+
 		input = strings.Replace(strings.ToLower(input), " ", "", -1)
 		return strings.Contains(context, input)
 	}
