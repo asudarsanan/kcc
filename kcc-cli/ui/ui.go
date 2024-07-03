@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-// Switch the current-context based on the selection made
+// SwitchContext Switch the current-context based on the selection made
 func SwitchContext(config *resources.KubeConfig, contextName string) (string, error) {
 	var selectedContextName = contextName
 	for _, context := range config.Contexts {
@@ -33,7 +33,7 @@ func CussorPositionPointer(config *resources.KubeConfig) (int, []resources.Conte
 	return cursorPosition, contexts
 }
 
-// render selector
+// ShowSelector render selector
 func ShowSelector(options []resources.Context, currentPos int) (string, error) {
 
 	modifiedOptions := make([]resources.Context, len(options))

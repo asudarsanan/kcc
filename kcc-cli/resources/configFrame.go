@@ -30,7 +30,7 @@ type User struct {
 	User map[string]interface{} `yaml:"user"`
 }
 
-// Read the config file and form data structures.
+// ReadKubeConfig Read the config file and form data structures.
 func ReadKubeConfig(filePath string) (*KubeConfig, error) {
 	data, err := os.ReadFile(filePath)
 	if err != nil {
@@ -44,7 +44,7 @@ func ReadKubeConfig(filePath string) (*KubeConfig, error) {
 	return &config, nil
 }
 
-// Write back the config file - .kube/config
+// WriteKubeConfig Write back the config file - .kube/config
 func WriteKubeConfig(filePath string, config *KubeConfig) error {
 	data, err := yaml.Marshal(config)
 	if err != nil {
