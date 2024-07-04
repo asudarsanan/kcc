@@ -15,7 +15,7 @@ import (
 
 // rootCmd represents the base command when called without any subcommands
 var (
-	cfgFile string
+	export  bool
 	rootCmd = &cobra.Command{
 		Use:   "kcc",
 		Short: "A Kubernetes Context Controller",
@@ -56,6 +56,8 @@ func Selector(cmd *cobra.Command, args []string) {
 		log.Printf("ERROR: failed in switching context: %v\n", err)
 		return
 	}
+	//log.Printf("Selected export capability %v", export)
+
 	err = resources.WriteKubeConfig(kubeConfigPath, config)
 	if err != nil {
 		log.Printf("ERROR: failed in writing kubeconfig: %v\n", err)
@@ -79,6 +81,8 @@ func init() {
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
-	//rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	rootCmd.PersistentFlags().BoolVarP(&export, "export", "e", false, "Export the selection as and environment variable. e.g; export KUBECONFIG=<selected context>")
 	//rootCmd.AddCommand(listCmd)
+	rootCmd.AddCommand(initCmd)
+	rootCmd.AddCommand(listCmd)
 }

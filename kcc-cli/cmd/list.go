@@ -21,7 +21,7 @@ func listCommand(cmd *cobra.Command, args []string) {
 	list.Contexts(contexts)
 }
 func init() {
-	rootCmd.AddCommand(listCmd)
+	//rootCmd.AddCommand(listCmd)
 
 	// Here you will define your flags and configuration settings.
 

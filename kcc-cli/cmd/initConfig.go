@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"kcc-cli/m/v2/resources"
 	"log"
 	"os"
 	"path/filepath"
@@ -12,9 +13,10 @@ import (
 var (
 	resetFlag bool
 	initCmd   = &cobra.Command{
-		Use:   "init",
-		Short: "Initialize the KCC configuration",
-		Run:   initConfigCmd,
+		Use:              "init",
+		Short:            "Initialize the KCC configuration",
+		Run:              initConfigCmd,
+		TraverseChildren: true,
 	}
 )
 
@@ -25,7 +27,7 @@ func initConfigCmd(cmd *cobra.Command, args []string) {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		log.Fatalf("ERROR: failed in getting user home directory %s", err)
-		os.Exit(1)
+		//os.Exit(1)
 	}
 	configDir := filepath.Join(home, ".config", "kcc")
 	configPath := filepath.Join(configDir, "config")
@@ -33,7 +35,8 @@ func initConfigCmd(cmd *cobra.Command, args []string) {
 	if err != nil {
 		log.Fatalf("ERROR: failed in creating config dir %s", err)
 	}
-	viper.SetDefault("kubeconfig_path", filepath.Join(home, ".kube", "config"))
+	viper.SetDefault("KUBECONFIG_PATH", filepath.Join(home, ".kube", "config"))
+	viper.SetDefault("KUBECONFIG_WDS", "")
 
 	/* TODO we need to make a way to include a flag input for taking in working dir path from the user and append them if multivalues
 	this means - --working-dir /home/test,/home/test2
@@ -41,11 +44,11 @@ func initConfigCmd(cmd *cobra.Command, args []string) {
 	this needs to happen at the time of initialization.
 	*/
 
-	if resetFlag {
+	if resetFlag || !resources.FileExists(configPath) {
 		err = viper.WriteConfigAs(configPath)
 		if err != nil {
 			log.Fatalf("ERROR: failed in writing config file %s", err)
-			os.Exit(1)
+			//os.Exit(1)
 		}
 		fmt.Println("Configuration initialized", viper.ConfigFileUsed())
 	} else {
@@ -57,5 +60,5 @@ func initConfigCmd(cmd *cobra.Command, args []string) {
 
 func init() {
 	initCmd.Flags().BoolVar(&resetFlag, "clean-slate", false, "Create a fresh configuration, overwriting existing one")
-	rootCmd.AddCommand(initCmd)
+	initCmd.AddCommand(addDirPathCmd)
 }

@@ -1,8 +1,8 @@
 package resources
 
 import (
-	"gopkg.in/yaml.v3"
-	"os"
+	"github.com/spf13/viper"
+	"log"
 )
 
 type KubeConfig struct {
@@ -30,25 +30,24 @@ type User struct {
 	User map[string]interface{} `yaml:"user"`
 }
 
-// ReadKubeConfig Read the config file and form data structures.
-func ReadKubeConfig(filePath string) (*KubeConfig, error) {
-	data, err := os.ReadFile(filePath)
-	if err != nil {
-		return nil, err
+// isKubeConfig check if a file is kube config
+func isKubeConfig(filepath string) bool {
+	v := viper.New()
+	v.SetConfigFile(filepath)
+	v.SetConfigType("yaml")
+
+	if err := v.ReadInConfig(); err != nil {
+		log.Fatalf("ERROR: reading file from working directory %s", filepath)
+		return false
 	}
 	var config KubeConfig
-	err = yaml.Unmarshal(data, &config)
-	if err != nil {
-		return nil, err
+	if err := v.Unmarshal(&config); err != nil {
+		log.Fatalf("ERROR: failed to unmarshal %s", filepath)
 	}
-	return &config, nil
-}
 
-// WriteKubeConfig Write back the config file - .kube/config
-func WriteKubeConfig(filePath string, config *KubeConfig) error {
-	data, err := yaml.Marshal(config)
-	if err != nil {
-		return err
+	//check if required fields are present to qualify as kubeconfig
+	if config.APIVersion == "" || config.Kind == "" || len(config.Clusters) == 0 || len(config.Contexts) == 0 {
+		return false
 	}
-	return os.WriteFile(filePath, data, 0644)
+	return true
 }
