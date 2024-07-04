@@ -17,8 +17,8 @@ import (
 var (
 	cfgFile string
 	rootCmd = &cobra.Command{
-		Use: "kcc",
-		//Short: "A brief description of your application",
+		Use:   "kcc",
+		Short: "A Kubernetes Context Controller",
 		//Long: `A longer description that spans multiple lines and likely contains
 		//examples and usage of using your application. For example:
 		//
@@ -81,10 +81,4 @@ func init() {
 	// when this action is called directly.
 	//rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	//rootCmd.AddCommand(listCmd)
-}
-
-func initConfig() {
-	if cfgFile != "" {
-
-	}
 }
