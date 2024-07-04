@@ -1,4 +1,5 @@
-config.yml
+*.yml
+*.yaml
 .idea/*
 .idea
 *.exe

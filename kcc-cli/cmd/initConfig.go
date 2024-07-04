@@ -35,14 +35,8 @@ func initConfigCmd(cmd *cobra.Command, args []string) {
 	if err != nil {
 		log.Fatalf("ERROR: failed in creating config dir %s", err)
 	}
-	viper.SetDefault("KUBECONFIG_PATH", filepath.Join(home, ".kube", "config"))
-	viper.SetDefault("KUBECONFIG_WDS", "")
-
-	/* TODO we need to make a way to include a flag input for taking in working dir path from the user and append them if multivalues
-	this means - --working-dir /home/test,/home/test2
-	there needs to be a way to idenfity valid kubeconfig files inside these working dir and make a note of them in the config itself?
-	this needs to happen at the time of initialization.
-	*/
+	viper.Set("kubeconfig_path", filepath.Join(home, ".kube", "config"))
+	viper.SetDefault("kubeconfigs", "")
 
 	if resetFlag || !resources.FileExists(configPath) {
 		err = viper.WriteConfigAs(configPath)

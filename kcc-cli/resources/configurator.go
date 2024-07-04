@@ -68,7 +68,7 @@ func ScanKubeConfigFiles(dirPath string) ([]string, error) {
 	var kubeConfigFiles []string
 
 	entries, err := os.ReadDir(dirPath)
-	fmt.Print(entries)
+	//fmt.Print(entries)
 	if err != nil {
 		return nil, err
 	}
@@ -79,6 +79,7 @@ func ScanKubeConfigFiles(dirPath string) ([]string, error) {
 			ext := strings.ToLower(filepath.Ext(entry.Name()))
 			if ext == ".yaml" || ext == ".yml" {
 				if isKubeConfig(path) {
+					log.Println("Scanning kubeconfig file:", path)
 					kubeConfigFiles = append(kubeConfigFiles, path)
 				}
 			}
@@ -88,11 +89,13 @@ func ScanKubeConfigFiles(dirPath string) ([]string, error) {
 	return kubeConfigFiles, nil
 }
 
+// TrackThisConfigs updates the KCC config file with the identified kubeconfig file paths.
 func TrackThisConfigs(filePaths []string) {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		log.Fatalf("ERROR: failed in getting user home directory %s", err)
 	}
+
 	configDir := filepath.Join(home, ".config", "kcc")
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
@@ -100,12 +103,40 @@ func TrackThisConfigs(filePaths []string) {
 
 	configPath := filepath.Join(configDir, "config")
 	viper.SetConfigFile(configPath)
+
 	if FileExists(configPath) {
 		err = viper.ReadInConfig()
 		if err != nil {
 			log.Fatalf("ERROR: failed to read the config file %s", err)
 		}
-		fmt.Print(viper.Get("kubeconfig_path"))
+	} else {
+		fmt.Println("Config file does not exist, creating a new one.")
 	}
 
+	// Get existing kubeconfig paths
+	existingPaths := viper.GetStringSlice("kubeconfigs")
+
+	// Append new paths
+	updatedPaths := append(existingPaths, filePaths...)
+
+	// Remove duplicates
+	uniquePaths := make(map[string]bool)
+	for _, path := range updatedPaths {
+		uniquePaths[path] = true
+	}
+
+	finalPaths := make([]string, 0, len(uniquePaths))
+	for path := range uniquePaths {
+		finalPaths = append(finalPaths, path)
+	}
+
+	// Update viper with the new paths
+	viper.Set("kubeconfigs", finalPaths)
+
+	// Write the updated config back to the file
+	if err := viper.WriteConfig(); err != nil {
+		log.Fatalf("ERROR: failed to write the config file %s", err)
+	} else {
+		fmt.Println("Updated config file with new kubeconfig paths.")
+	}
 }
