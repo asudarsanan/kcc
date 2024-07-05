@@ -13,10 +13,10 @@ import (
 var (
 	resetFlag bool
 	initCmd   = &cobra.Command{
-		Use:              "init",
-		Short:            "Initialize the KCC configuration",
-		Run:              initConfigCmd,
-		TraverseChildren: true,
+		Use:   "init",
+		Short: "Initialize the KCC configuration",
+		Run:   initConfigCmd,
+		//TraverseChildren: true,
 	}
 )
 

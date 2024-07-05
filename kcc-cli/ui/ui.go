@@ -77,3 +77,37 @@ func ShowSelector(options []resources.Context, currentPos int) (string, error) {
 
 	return options[i].Name, nil
 }
+
+func ShowPathSelector(options []string) (string, error) {
+	//modifiedOptions := make([]string, len(options))
+	templates := &promptui.SelectTemplates{
+		Label:    "{{ . }} {{ `/ to search` | faint }}",
+		Active:   ">    {{ . | cyan | bold }}",
+		Inactive: "     {{ . | white}}",
+		Selected: "     {{ . | cyan }}",
+	}
+	// Search path in the selector
+	searcher := func(input string, index int) bool {
+		option := options[index]
+		path := strings.Replace(strings.ToLower(option), " ", "", -1)
+
+		input = strings.Replace(strings.ToLower(input), " ", "", -1)
+		return strings.Contains(path, input)
+	}
+	prompt := promptui.Select{
+		Label:        "Pick the config path to use.",
+		Items:        options,
+		Templates:    templates,
+		Size:         5,
+		Searcher:     searcher,
+		CursorPos:    1,
+		HideSelected: true,
+		HideHelp:     true,
+	}
+	i, _, err := prompt.RunCursorAt(0, len(options)-1)
+	if err != nil {
+		return "", err
+	}
+
+	return options[i], nil
+}

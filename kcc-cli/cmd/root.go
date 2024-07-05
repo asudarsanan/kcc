@@ -57,47 +57,85 @@ func Selector(cmd *cobra.Command, args []string) {
 		log.Fatalf("ERROR: failed to read the config file %s", err)
 	}
 
-	var kubeConfigPath string
+	var kubeConfigPath []string
 
 	if !export {
-		kubeConfigPath = viper.GetString("kubeconfig_path")
+		kubeConfigPath = viper.GetStringSlice("kubeconfig_path")
 		err = processKubeConfig(kubeConfigPath)
 		if err != nil {
 			log.Printf("ERROR: failed to process kubeconfig: %v\n", err)
 		}
 	} else {
 		kubeConfigPaths := viper.GetStringSlice("kubeconfigs")
-		for _, path := range kubeConfigPaths {
-			err = processKubeConfig(path)
-			if err != nil {
-				log.Printf("ERROR: failed to process kubeconfig: %v\n", err)
-				return
-			}
+		err = processKubeConfig(kubeConfigPaths)
+		//for _, path := range kubeConfigPaths {
+		//	err = processKubeConfig(path)
+		if err != nil {
+			log.Printf("ERROR: failed to process kubeconfig: %v\n", err)
+			return
 		}
+		//}
 	}
 }
 
-func processKubeConfig(kubeConfigPath string) error {
-	config, err := resources.ReadKubeConfig(kubeConfigPath)
+// processKubeConfig processes the provided kubeconfig paths to allow the user to select
+// and switch contexts. If the export flag is true, it first lets the user select a config
+// file from the provided paths before proceeding to context selection.
+//
+// Parameters:
+// - kubeConfigPaths: A slice of strings containing paths to kubeconfig files.
+// - export: A boolean flag indicating whether to export the selection as an environment variable.
+//
+// Returns:
+// - error: An error object if any issues occur during the process.
+//
+// This function performs the following steps:
+//  1. If the export flag is true, it displays a selector for the user to choose a kubeconfig file
+//     from the provided paths. The selected path is then used for further processing.
+//  2. Reads the kubeconfig file from the selected or default path and parses its contexts.
+//  3. Creates a list of context names and displays a selector for the user to choose a context.
+//  4. Switches to the selected context and updates the CurrentContext field in the kubeconfig.
+//  5. Writes the updated kubeconfig back to the file.
+//  6. Prints a confirmation message indicating the selected context.
+func processKubeConfig(kubeConfigPaths []string) error {
+	//var combinedContexts []resources.Context
+	//var configs []*resources.KubeConfig
+	var contextNames []string
+
+	if export {
+		selectedConfigPath, err := ui.ShowPathSelector(kubeConfigPaths)
+		if err != nil {
+			return fmt.Errorf("failed in selecting config path: %w", err)
+		}
+		kubeConfigPaths = []string{selectedConfigPath}
+		//log.Println("INFO: Selected config path:", selectedConfigPath)
+	}
+
+	// Assuming only one config path after the selection process
+	configPath := kubeConfigPaths[0]
+	config, err := resources.ReadKubeConfig(configPath)
 	if err != nil {
 		return fmt.Errorf("failed to read kubeconfig: %w", err)
 	}
 
-	contexts := make([]string, len(config.Contexts))
-	for i, ctx := range config.Contexts {
-		contexts[i] = ctx.Name
+	contexts := config.Contexts
+	contextNames = make([]string, len(contexts))
+	for i, ctx := range contexts {
+		contextNames[i] = ctx.Name
 	}
 	contextPosition, contextList := ui.CussorPositionPointer(config)
 	selectedContext, err := ui.ShowSelector(contextList, contextPosition)
 	if err != nil {
 		return fmt.Errorf("failed in selecting context: %w", err)
 	}
+
 	selected, err := ui.SwitchContext(config, selectedContext)
 	if err != nil {
 		return fmt.Errorf("failed in switching context: %w", err)
 	}
 
-	err = resources.WriteKubeConfig(kubeConfigPath, config)
+	config.CurrentContext = selectedContext
+	err = resources.WriteKubeConfig(configPath, config)
 	if err != nil {
 		return fmt.Errorf("failed in writing kubeconfig: %w", err)
 	}
@@ -126,7 +164,6 @@ func init() {
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
 	rootCmd.PersistentFlags().BoolVarP(&export, "export", "e", false, "Export the selection as and environment variable. e.g; export KUBECONFIG=<selected context>")
-	//rootCmd.AddCommand(listCmd)
 	rootCmd.AddCommand(initCmd)
 	rootCmd.AddCommand(listCmd)
 }

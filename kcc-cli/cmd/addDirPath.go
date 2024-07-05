@@ -19,7 +19,7 @@ var (
 
 func addDirPathCommand(cmd *cobra.Command, args []string) {
 
-	filePaths := strings.Split(wdPaths, ":")
+	filePaths := strings.Split(wdPaths, ",")
 	for _, filePath := range filePaths {
 		configs, err := resources.ScanKubeConfigFiles(filePath)
 		if err != nil {
