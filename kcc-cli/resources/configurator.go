@@ -89,8 +89,8 @@ func ScanKubeConfigFiles(dirPath string) ([]string, error) {
 	return kubeConfigFiles, nil
 }
 
-// TrackThisConfigs updates the KCC config file with the identified kubeconfig file paths.
-func TrackThisConfigs(filePaths []string) {
+// KccConfigFile This method will find and return the kcc configuration file, if exists
+func KccConfigFile() string {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		log.Fatalf("ERROR: failed in getting user home directory %s", err)
@@ -102,41 +102,91 @@ func TrackThisConfigs(filePaths []string) {
 	viper.AddConfigPath(configDir)
 
 	configPath := filepath.Join(configDir, "config")
-	viper.SetConfigFile(configPath)
+	return configPath
+}
 
+// TrackThisConfigs updates the KCC config file with the identified kubeconfig file paths.
+func TrackThisConfigs(filePaths []string) {
+	configPath := KccConfigFile()
+	viper.SetConfigFile(configPath)
 	if FileExists(configPath) {
-		err = viper.ReadInConfig()
+		err := viper.ReadInConfig()
 		if err != nil {
 			log.Fatalf("ERROR: failed to read the config file %s", err)
 		}
 	} else {
 		fmt.Println("Config file does not exist, creating a new one.")
 	}
-
 	// Get existing kubeconfig paths
 	existingPaths := viper.GetStringSlice("kubeconfigs")
-
 	// Append new paths
 	updatedPaths := append(existingPaths, filePaths...)
-
 	// Remove duplicates
 	uniquePaths := make(map[string]bool)
 	for _, path := range updatedPaths {
 		uniquePaths[path] = true
 	}
-
 	finalPaths := make([]string, 0, len(uniquePaths))
 	for path := range uniquePaths {
 		finalPaths = append(finalPaths, path)
 	}
-
 	// Update viper with the new paths
 	viper.Set("kubeconfigs", finalPaths)
-
 	// Write the updated config back to the file
 	if err := viper.WriteConfig(); err != nil {
 		log.Fatalf("ERROR: failed to write the config file %s", err)
 	} else {
 		fmt.Println("Updated config file with new kubeconfig paths.")
 	}
+}
+
+// SwapThisConfig swaps the current kubeconfig file with the selected file and updates the config.
+func SwapThisConfig(filePath string) error {
+	if !FileExists(filePath) || !FileExists(KubeConfigPath()) {
+		log.Fatalf("ERROR: one of the files does not exist")
+	}
+
+	// Backup the current kubeconfig file
+	originalKubeConfigPath := KubeConfigPath()
+	backupFileName := fmt.Sprintf("config-%s.yaml", "kcc-swap")
+	backupFilePath := filepath.Join(filepath.Dir(originalKubeConfigPath), backupFileName)
+
+	err := CopyFile(originalKubeConfigPath, backupFilePath)
+	if err != nil {
+		log.Fatalf("ERROR: failed to backup the current kubeconfig file: %v", err)
+	}
+	err = CopyFile(filePath, originalKubeConfigPath)
+	if err != nil {
+		log.Fatalf("ERROR: failed to swap the kubeconfig file: %v", err)
+	}
+
+	configPath := KccConfigFile()
+	viper.SetConfigFile(configPath)
+
+	err = viper.ReadInConfig()
+	if err != nil {
+		log.Fatalf("ERROR: failed to read the KCC config file: %v", err)
+	}
+	viper.Set("swapped_file", backupFilePath)
+	viper.Set("active_swaps", filePath)
+	err = viper.WriteConfig()
+	if err != nil {
+		log.Fatalf("ERROR: failed to update the KCC config file: %v", err)
+	}
+
+	fmt.Println("Successfully swapped the kubeconfig file")
+	return nil
+}
+
+// CopyFile copies the contents of the source file to the destination file.
+func CopyFile(src, dst string) error {
+	input, err := os.ReadFile(src)
+	if err != nil {
+		return err
+	}
+	err = os.WriteFile(dst, input, 0644)
+	if err != nil {
+		return err
+	}
+	return nil
 }

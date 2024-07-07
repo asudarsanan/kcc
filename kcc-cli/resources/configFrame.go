@@ -16,8 +16,13 @@ type KubeConfig struct {
 }
 
 type Cluster struct {
-	Name    string                 `yaml:"name"`
-	Cluster map[string]interface{} `yaml:"cluster"`
+	Name    string         `yaml:"name"`
+	Cluster ClusterDetails `yaml:"cluster"`
+}
+
+type ClusterDetails struct {
+	Server               string `yaml:"server"`
+	CertificateAuthority string `yaml:"certificate-authority"`
 }
 
 type Context struct {

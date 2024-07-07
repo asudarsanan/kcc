@@ -17,8 +17,9 @@ import (
 
 // rootCmd represents the base command when called without any subcommands
 var (
-	export  bool
-	rootCmd = &cobra.Command{
+	extend        bool
+	defaultConfig bool
+	rootCmd       = &cobra.Command{
 		Use:   "kcc",
 		Short: "A Kubernetes Context Controller",
 		//Long: `A longer description that spans multiple lines and likely contains
@@ -40,26 +41,27 @@ func Selector(cmd *cobra.Command, args []string) {
 	if err != nil {
 		log.Fatalf("ERROR: failed in getting user home directory %s", err)
 	}
-
 	configDir := filepath.Join(home, ".config", "kcc")
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath(configDir)
-
 	configPath := filepath.Join(configDir, "config")
 	viper.SetConfigFile(configPath)
 	if !resources.FileExists(configPath) {
 		log.Fatalf("ERROR: config file does not exist: %s", configPath)
 	}
-
 	err = viper.ReadInConfig()
 	if err != nil {
 		log.Fatalf("ERROR: failed to read the config file %s", err)
 	}
-
 	var kubeConfigPath []string
-
-	if !export {
+	if defaultConfig {
+		err := removeSwap()
+		if err != nil {
+			log.Fatal("ERROR: failed in reverting to default configuration", err)
+		}
+	}
+	if !extend {
 		kubeConfigPath = viper.GetStringSlice("kubeconfig_path")
 		err = processKubeConfig(kubeConfigPath)
 		if err != nil {
@@ -101,8 +103,7 @@ func processKubeConfig(kubeConfigPaths []string) error {
 	//var combinedContexts []resources.Context
 	//var configs []*resources.KubeConfig
 	var contextNames []string
-
-	if export {
+	if extend {
 		selectedConfigPath, err := ui.ShowPathSelector(kubeConfigPaths)
 		if err != nil {
 			return fmt.Errorf("failed in selecting config path: %w", err)
@@ -110,14 +111,12 @@ func processKubeConfig(kubeConfigPaths []string) error {
 		kubeConfigPaths = []string{selectedConfigPath}
 		//log.Println("INFO: Selected config path:", selectedConfigPath)
 	}
-
 	// Assuming only one config path after the selection process
 	configPath := kubeConfigPaths[0]
 	config, err := resources.ReadKubeConfig(configPath)
 	if err != nil {
 		return fmt.Errorf("failed to read kubeconfig: %w", err)
 	}
-
 	contexts := config.Contexts
 	contextNames = make([]string, len(contexts))
 	for i, ctx := range contexts {
@@ -128,20 +127,23 @@ func processKubeConfig(kubeConfigPaths []string) error {
 	if err != nil {
 		return fmt.Errorf("failed in selecting context: %w", err)
 	}
-
 	selected, err := ui.SwitchContext(config, selectedContext)
 	if err != nil {
 		return fmt.Errorf("failed in switching context: %w", err)
 	}
-
 	config.CurrentContext = selectedContext
 	err = resources.WriteKubeConfig(configPath, config)
 	if err != nil {
 		return fmt.Errorf("failed in writing kubeconfig: %w", err)
 	}
-
 	cyan := color.New(color.FgHiCyan).SprintFunc()
 	fmt.Printf("Switched to context: %s\n", cyan(selected))
+	if extend {
+		err := resources.SwapThisConfig(kubeConfigPaths[0])
+		if err != nil {
+			return fmt.Errorf("failed in swapping this context: %w", err)
+		}
+	}
 	return nil
 }
 
@@ -163,7 +165,9 @@ func init() {
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
-	rootCmd.PersistentFlags().BoolVarP(&export, "export", "e", false, "Export the selection as and environment variable. e.g; export KUBECONFIG=<selected context>")
+	rootCmd.PersistentFlags().BoolVarP(&extend, "extend", "e", false, "Make an external configuration the primary config and use with kubectl commands.")
+	rootCmd.PersistentFlags().BoolVarP(&defaultConfig, "remove-swap", "r", false, "This will remove any active swaps in the config files and make you default kube config in $HOME/.kube/config")
+	rootCmd.MarkFlagsMutuallyExclusive("extend", "remove-swap")
 	rootCmd.AddCommand(initCmd)
 	rootCmd.AddCommand(listCmd)
 }
