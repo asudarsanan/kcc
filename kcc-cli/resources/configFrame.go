@@ -16,8 +16,8 @@ type KubeConfig struct {
 }
 
 type Cluster struct {
-	Name    string         `yaml:"name"`
-	Cluster ClusterDetails `yaml:"cluster"`
+	Name           string         `yaml:"name"`
+	ClusterDetails ClusterDetails `yaml:"cluster"`
 }
 
 type ClusterDetails struct {
@@ -26,8 +26,9 @@ type ClusterDetails struct {
 }
 
 type Context struct {
-	Name    string                 `yaml:"name"`
-	Context map[string]interface{} `yaml:"context"`
+	Name           string                 `yaml:"name"`
+	Context        map[string]interface{} `yaml:"context"`
+	ClusterDetails ClusterDetails
 }
 
 type User struct {

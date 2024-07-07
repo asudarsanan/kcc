@@ -48,7 +48,6 @@ func ShowSelector(options []resources.Context, currentPos int) (string, error) {
 		Details: `{{ "CONTEXT:" | green | bold }}	{{ .Name | white  }}
 {{ "CLUSTER:" | green | bold  }}	{{ .Context.cluster | white }}
 {{ "AUTH INFO:" | green | bold  }}	{{ .Context.user | white }}
-{{ "SERVER INFO:" | green | bold  }}	{{ .Context.cluster.server | white }}
 `,
 	}
 

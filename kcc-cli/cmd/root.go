@@ -114,6 +114,8 @@ func processKubeConfig(kubeConfigPaths []string) error {
 	// Assuming only one config path after the selection process
 	configPath := kubeConfigPaths[0]
 	config, err := resources.ReadKubeConfig(configPath)
+	//fmt.Println(config.Clusters[0].ClusterDetails.Server)
+	//fmt.Println(config.Contexts[0].Context)
 	if err != nil {
 		return fmt.Errorf("failed to read kubeconfig: %w", err)
 	}
