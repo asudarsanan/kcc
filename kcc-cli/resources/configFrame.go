@@ -6,34 +6,53 @@ import (
 )
 
 type KubeConfig struct {
-	APIVersion     string                 `yaml:"apiVersion"`
-	Clusters       []Cluster              `yaml:"clusters"`
-	Contexts       []Context              `yaml:"contexts"`
-	CurrentContext string                 `yaml:"current-context"`
-	Kind           string                 `yaml:"kind"`
-	Preferences    map[string]interface{} `yaml:"preferences"`
-	Users          []User                 `yaml:"users"`
+	APIVersion     string      `yaml:"apiVersion"`
+	Clusters       []Cluster   `yaml:"clusters"`
+	Contexts       []Context   `yaml:"contexts"`
+	CurrentContext string      `yaml:"current-context"`
+	Kind           string      `yaml:"kind"`
+	Preferences    Preferences `yaml:"preferences"`
+	Users          []User      `yaml:"users"`
 }
 
 type Cluster struct {
-	Name           string         `yaml:"name"`
-	ClusterDetails ClusterDetails `yaml:"cluster"`
+	Name    string        `yaml:"name"`
+	Cluster ClusterDetail `yaml:"cluster"`
 }
 
-type ClusterDetails struct {
-	Server               string `yaml:"server"`
-	CertificateAuthority string `yaml:"certificate-authority"`
+type ClusterDetail struct {
+	Server                   string `yaml:"server"`
+	CertificateAuthorityData string `yaml:"certificate-authority-data"`
 }
 
 type Context struct {
-	Name           string                 `yaml:"name"`
-	Context        map[string]interface{} `yaml:"context"`
-	ClusterDetails ClusterDetails
+	Name    string        `yaml:"name"`
+	Context ContextDetail `yaml:"context"`
+}
+
+type ContextDetail struct {
+	Cluster string `yaml:"cluster"`
+	User    string `yaml:"user"`
 }
 
 type User struct {
-	Name string                 `yaml:"name"`
-	User map[string]interface{} `yaml:"user"`
+	Name string     `yaml:"name"`
+	User UserDetail `yaml:"user"`
+}
+
+type UserDetail struct {
+	ClientCertificateData string `yaml:"client-certificate-data"`
+	ClientKeyData         string `yaml:"client-key-data"`
+}
+
+type Preferences struct {
+	Colors bool `yaml:"colors,omitempty"`
+}
+
+type ContextWithClusterInfo struct {
+	Name    string
+	Context ContextDetail
+	Cluster ClusterDetail
 }
 
 // isKubeConfig check if a file is kube config

@@ -125,6 +125,7 @@ func processKubeConfig(kubeConfigPaths []string) error {
 		contextNames[i] = ctx.Name
 	}
 	contextPosition, contextList := ui.CursorPositionPointer(config)
+	fmt.Println(config.Clusters[0].Cluster.Server)
 	selectedContext, err := ui.ShowSelector(contextList, contextPosition)
 	if err != nil {
 		return fmt.Errorf("failed in selecting context: %w", err)

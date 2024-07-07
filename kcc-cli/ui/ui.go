@@ -43,12 +43,13 @@ func ShowSelector(options []resources.Context, currentPos int) (string, error) {
 	templates := &promptui.SelectTemplates{
 		Label:    "{{ . }}? {{ `/ to search` | faint }}",
 		Active:   ">    {{ .Name | cyan | bold }}",
-		Inactive: "     {{ .Name | white}}",
+		Inactive: "     {{ .Name | white }}",
 		Selected: "     {{ .Name | cyan }}",
-		Details: `{{ "CONTEXT:" | green | bold }}	{{ .Name | white  }}
-{{ "CLUSTER:" | green | bold  }}	{{ .Context.cluster | white }}
-{{ "AUTH INFO:" | green | bold  }}	{{ .Context.user | white }}
-`,
+		Details: `
+{{ "CONTEXT:" | green | bold }}  {{ .Name | white }}
+{{ "CLUSTER:" | green | bold }}  {{ .Context.Cluster | white }}
+{{ "AUTH INFO:" | green | bold }}  {{ .Context.User | white }}
+{{ "SERVER INFO:" | green | bold }}  {{ .Context | white }}`,
 	}
 
 	// Search contexts in the selector
