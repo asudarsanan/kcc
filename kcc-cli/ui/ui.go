@@ -19,7 +19,7 @@ func SwitchContext(config *resources.KubeConfig, contextName string) (string, er
 	return "", fmt.Errorf("context %s not found", contextName)
 }
 
-func CussorPositionPointer(config *resources.KubeConfig) (int, []resources.Context) {
+func CursorPositionPointer(config *resources.KubeConfig) (int, []resources.Context) {
 	cursorPosition := -1
 	contexts := config.Contexts
 	currentContext := config.CurrentContext

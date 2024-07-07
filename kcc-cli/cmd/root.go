@@ -124,7 +124,7 @@ func processKubeConfig(kubeConfigPaths []string) error {
 	for i, ctx := range contexts {
 		contextNames[i] = ctx.Name
 	}
-	contextPosition, contextList := ui.CussorPositionPointer(config)
+	contextPosition, contextList := ui.CursorPositionPointer(config)
 	selectedContext, err := ui.ShowSelector(contextList, contextPosition)
 	if err != nil {
 		return fmt.Errorf("failed in selecting context: %w", err)
